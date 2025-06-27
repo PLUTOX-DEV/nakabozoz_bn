@@ -15,7 +15,6 @@ app.use(express.json());
 
 // Routes
 app.use("/api/users", userRoutes);
-app.use('/api/leaderboard', require('./routes/leaderboard'));
 
 // Connect to MongoDB
 mongoose.connect(process.env.MONGO_URI)
