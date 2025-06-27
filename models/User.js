@@ -9,6 +9,7 @@ const userSchema = new mongoose.Schema({
   username: String,
   fullName: String,
   photo_url: String,
+
   balance: {
     type: Number,
     default: 0,
@@ -31,8 +32,8 @@ const userSchema = new mongoose.Schema({
     default: 10000,
   },
 
-  // Referral tracking
-  referrer: String, // who referred this user
+  // ✅ Referral tracking
+  referredBy: String, // who referred this user
   referralCount: {
     type: Number,
     default: 0,

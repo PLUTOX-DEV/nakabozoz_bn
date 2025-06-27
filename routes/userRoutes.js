@@ -5,42 +5,42 @@ const User = require("../models/User");
 // 📌 Get all users
 router.get("/", async (req, res) => {
   try {
-    const users = await User.find().select("-password"); // exclude password if exists
+    const users = await User.find().select("-password"); // just in case password exists
     res.json(users);
   } catch (err) {
+    console.error(err);
     res.status(500).json({ message: "Failed to get users" });
   }
 });
 
-// 📌 Create or fetch user with referral reward logic
+// 📌 Create or fetch user with referral + welcome bonus logic
 router.post("/login", async (req, res) => {
   try {
-    const { telegramId, username, fullName, referrer } = req.body;
+    const { telegramId, username, fullName, referrer, photo_url } = req.body;
 
     let user = await User.findOne({ telegramId });
 
     if (!user) {
-      // ✅ Create new user
+      // 🎁 Create new user with welcome bonus
       user = await User.create({
         telegramId,
         username,
         fullName,
-        referrer: referrer || null, // store who referred this user
+        balance: 10, // welcome bonus
+        referredBy: referrer || null,
+        photo_url: photo_url || "",
       });
 
-      // ✅ Handle referral reward logic
+      // 🎯 Reward the referrer
       if (referrer && referrer !== username) {
         const referrerUser = await User.findOne({ username: referrer });
 
         if (referrerUser) {
-          // Increment referralCount
           referrerUser.referralCount = (referrerUser.referralCount || 0) + 1;
+          referrerUser.referralEarnings = (referrerUser.referralEarnings || 0) + 20;
+          referrerUser.balance = (referrerUser.balance || 0) + 20;
 
-          // Add referral earnings and balance
-          referrerUser.referralEarnings += 20;
-          referrerUser.balance += 20;
-
-          // Add referral info to array
+          referrerUser.referrals = referrerUser.referrals || [];
           referrerUser.referrals.push({
             username: username,
             joinedAt: new Date(),
@@ -75,7 +75,6 @@ router.get("/referral-leaderboard", async (req, res) => {
   }
 });
 
-
 // 📌 Get user by telegramId
 router.get("/:telegramId", async (req, res) => {
   try {
@@ -83,11 +82,12 @@ router.get("/:telegramId", async (req, res) => {
     if (!user) return res.status(404).json({ message: "User not found" });
     res.json(user);
   } catch (err) {
+    console.error(err);
     res.status(500).json({ message: "Server error" });
   }
 });
 
-// 📌 Update user info (coins, VIP, etc.)
+// 📌 Update user info
 router.post("/update", async (req, res) => {
   try {
     const { telegramId, ...updates } = req.body;
@@ -106,6 +106,5 @@ router.post("/update", async (req, res) => {
     res.status(500).json({ message: "Failed to update user" });
   }
 });
-
 
 module.exports = router;
