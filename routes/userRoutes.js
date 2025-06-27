@@ -60,6 +60,22 @@ router.post("/login", async (req, res) => {
   }
 });
 
+// 📌 Get top referrers for leaderboard
+router.get("/referral-leaderboard", async (req, res) => {
+  try {
+    const topReferrers = await User.find({ referralCount: { $gt: 0 } })
+      .sort({ referralCount: -1 })
+      .limit(20)
+      .select("username fullName photo_url referralCount");
+
+    res.json(topReferrers);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to load leaderboard" });
+  }
+});
+
+
 // 📌 Get user by telegramId
 router.get("/:telegramId", async (req, res) => {
   try {
@@ -91,19 +107,5 @@ router.post("/update", async (req, res) => {
   }
 });
 
-// 📌 Get top referrers for leaderboard
-router.get("/referral-leaderboard", async (req, res) => {
-  try {
-    const topReferrers = await User.find({ referralCount: { $gt: 0 } })
-      .sort({ referralCount: -1 })
-      .limit(20)
-      .select("username fullName photo_url referralCount");
-
-    res.json(topReferrers);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Failed to load leaderboard" });
-  }
-});
 
 module.exports = router;
