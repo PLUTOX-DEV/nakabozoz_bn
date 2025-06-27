@@ -1,10 +1,8 @@
 const express = require("express");
 const router = express.Router();
+const User = require("../models/User");
 
-// Make sure to import the User model
-const User = require("../models/User"); // Adjust path as needed
-
-router.get("/leaderboard", async (req, res) => {
+router.get("/referral-leaderboard", async (req, res) => {
   try {
     const topReferrers = await User.find({ referralCount: { $gt: 0 } })
       .sort({ referralCount: -1 })
@@ -13,9 +11,9 @@ router.get("/leaderboard", async (req, res) => {
 
     res.json(topReferrers);
   } catch (err) {
+    console.error(err);
     res.status(500).json({ error: "Failed to load leaderboard" });
   }
 });
 
-// Missing export caused the "argument handler must be a function" error
 module.exports = router;

@@ -2,11 +2,10 @@ const express = require("express");
 const router = express.Router();
 const User = require("../models/User");
 
-
 // 📌 Get all users
 router.get("/", async (req, res) => {
   try {
-    const users = await User.find().select("-password"); // exclude sensitive info like password if any
+    const users = await User.find().select("-password"); // exclude password if exists
     res.json(users);
   } catch (err) {
     res.status(500).json({ message: "Failed to get users" });
@@ -34,9 +33,14 @@ router.post("/login", async (req, res) => {
         const referrerUser = await User.findOne({ username: referrer });
 
         if (referrerUser) {
+          // Increment referralCount
+          referrerUser.referralCount = (referrerUser.referralCount || 0) + 1;
+
+          // Add referral earnings and balance
           referrerUser.referralEarnings += 20;
           referrerUser.balance += 20;
 
+          // Add referral info to array
           referrerUser.referrals.push({
             username: username,
             joinedAt: new Date(),
@@ -55,8 +59,6 @@ router.post("/login", async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
-
-
 
 // 📌 Get user by telegramId
 router.get("/:telegramId", async (req, res) => {
@@ -89,7 +91,7 @@ router.post("/update", async (req, res) => {
   }
 });
 
-// 📌 Optional: Get top referrers for leaderboard
+// 📌 Get top referrers for leaderboard
 router.get("/referral-leaderboard", async (req, res) => {
   try {
     const topReferrers = await User.find({ referralCount: { $gt: 0 } })
@@ -99,6 +101,7 @@ router.get("/referral-leaderboard", async (req, res) => {
 
     res.json(topReferrers);
   } catch (err) {
+    console.error(err);
     res.status(500).json({ error: "Failed to load leaderboard" });
   }
 });
