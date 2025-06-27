@@ -2,10 +2,10 @@ const express = require("express");
 const router = express.Router();
 const User = require("../models/User");
 
-// 📌 Get all users
+// 📌 Get all users (exclude password if any)
 router.get("/", async (req, res) => {
   try {
-    const users = await User.find().select("-password"); // just in case password exists
+    const users = await User.find().select("-password");
     res.json(users);
   } catch (err) {
     console.error(err);
@@ -16,22 +16,24 @@ router.get("/", async (req, res) => {
 // 📌 Create or fetch user with referral + welcome bonus logic
 router.post("/login", async (req, res) => {
   try {
+    // Expecting 'referrer' field in request body as who referred the new user
     const { telegramId, username, fullName, referrer, photo_url } = req.body;
 
+    // Check if user already exists
     let user = await User.findOne({ telegramId });
 
     if (!user) {
-      // 🎁 Create new user with welcome bonus
+      // Create new user with welcome bonus and save referredBy field
       user = await User.create({
         telegramId,
         username,
         fullName,
-        balance: 10, // welcome bonus
-        referredBy: referrer || null,
+        balance: 10,  // welcome bonus coins
+        referredBy: referrer || null,  // save who referred this user
         photo_url: photo_url || "",
       });
 
-      // 🎯 Reward the referrer
+      // Reward the referrer (if exists and is not the same user)
       if (referrer && referrer !== username) {
         const referrerUser = await User.findOne({ username: referrer });
 
@@ -63,10 +65,15 @@ router.post("/login", async (req, res) => {
 // 📌 Get top referrers for leaderboard
 router.get("/referral-leaderboard", async (req, res) => {
   try {
+    // Find users with referralCount > 0 and sort descending, limit 20
     const topReferrers = await User.find({ referralCount: { $gt: 0 } })
       .sort({ referralCount: -1 })
       .limit(20)
       .select("username fullName photo_url referralCount");
+
+    if (!topReferrers || topReferrers.length === 0) {
+      return res.status(404).json({ message: "No referrers found" });
+    }
 
     res.json(topReferrers);
   } catch (err) {
@@ -87,7 +94,7 @@ router.get("/:telegramId", async (req, res) => {
   }
 });
 
-// 📌 Update user info
+// 📌 Update user info (coins, VIP, etc.)
 router.post("/update", async (req, res) => {
   try {
     const { telegramId, ...updates } = req.body;
