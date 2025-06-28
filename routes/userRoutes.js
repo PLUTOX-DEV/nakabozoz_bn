@@ -82,6 +82,27 @@ router.get("/referral-leaderboard", async (req, res) => {
   }
 });
 
+router.post('/buy-tap-bot', async (req, res) => {
+  const { telegramId } = req.body;
+
+  try {
+    const user = await User.findOne({ telegramId });
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    if (user.hasTapBot) return res.status(400).json({ message: "Tap Bot already owned" });
+    if (user.balance < 100) return res.status(400).json({ message: "Not enough coins" });
+
+    user.balance -= 100;
+    user.hasTapBot = true;
+
+    await user.save();
+
+    res.json({ success: true, user });
+  } catch (err) {
+    res.status(500).json({ message: "Error buying Tap Bot", error: err.message });
+  }
+});
+
 // 📌 Get user by telegramId
 router.get("/:telegramId", async (req, res) => {
   try {
