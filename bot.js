@@ -1,33 +1,38 @@
-// bot.js
 const TelegramBot = require("node-telegram-bot-api");
 const token = process.env.TELEGRAM_BOT_TOKEN;
 
-// Create bot instance in webhook mode (not polling)
+// ✅ Webhook mode (Render-friendly)
 const bot = new TelegramBot(token, { webHook: true });
 
-// Set webhook URL (your Render backend)
-const URL = "https://nakabozoz.onrender.com"; // 🔁 Change to your backend URL
+// ✅ Replace with your deployed backend URL
+const URL = "https://nakabozoz.onrender.com";
+
+// ✅ Setup webhook endpoint
 bot.setWebHook(`${URL}/bot${token}`);
 
-// Start handler
+// ✅ Handle /start with optional referral param
 bot.onText(/\/start(?: (.+))?/, (msg, match) => {
   const chatId = msg.chat.id;
-  const referrer = match[1] || "";
+  const referrer = match[1] || ""; // Optional referral code
 
-  const miniAppUrl = `https://t.me/Djangotestxr_bot?start=${referrer}`;
+  const miniAppUrl = `https://t.me/Djangotestxr_bot/SpinTPE?start=${referrer}`;
 
   const welcomeText = referrer
     ? `👋 Welcome! You were referred by ${referrer}.`
-    : `👋 Welcome!`;
+    : `👋 Welcome to Spin & Earn!`;
 
   bot.sendPhoto(chatId, "https://tpe-plutoxs-projects-1800c7ee.vercel.app/image.jpg", {
     caption: welcomeText,
     reply_markup: {
       inline_keyboard: [[
-        { text: "🚀 Launch Mini App", url: miniAppUrl }
-      ]],
-    },
+        {
+          text: "🚀 Launch Mini App",
+          url: miniAppUrl,
+        }
+      ]]
+    }
   });
 });
 
+// ✅ Export for use in server.js
 module.exports = bot;
