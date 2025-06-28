@@ -33,7 +33,7 @@ const userSchema = new mongoose.Schema({
   },
 
   // ✅ Referral tracking
-  referredBy: String, // who referred this user
+  referredBy: String,
   referralCount: {
     type: Number,
     default: 0,
@@ -51,6 +51,13 @@ const userSchema = new mongoose.Schema({
       },
     },
   ],
+
+  // ✅ New field to control welcome screen
+  isNewUser: {
+    type: Boolean,
+    default: true,
+  },
+
 }, { timestamps: true });
 
 module.exports = mongoose.model("User", userSchema);
