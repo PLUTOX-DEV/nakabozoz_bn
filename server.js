@@ -6,6 +6,7 @@ require("dotenv").config();
 
 const userRoutes = require("./routes/userRoutes");
 const bot = require("./bot"); // Make sure this is imported
+const adminRoutes = require("./routes/adminRoutes");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -21,6 +22,8 @@ app.post(`/bot${process.env.TELEGRAM_BOT_TOKEN}`, (req, res) => {
 
 // API routes
 app.use("/api/users", userRoutes);
+app.use("/api/admin", adminRoutes);
+
 
 // Connect to MongoDB
 mongoose.connect(process.env.MONGO_URI)
