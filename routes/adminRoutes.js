@@ -6,16 +6,16 @@ const User = require("../models/User");
 const adminAuth = (req, res, next) => {
   const adminKey = req.headers["x-admin-key"];
   if (adminKey === process.env.ADMIN_KEY) next();
-  else res.status(403).json({ message: "Forbidden" });
+  else res.status(403).json({ success: false, message: "Forbidden" });
 };
 
-// Get all users (without password)
+// Get all users
 router.get("/users", adminAuth, async (req, res) => {
   try {
     const users = await User.find().select("-password").sort({ createdAt: -1 });
-    res.json(users);
+    res.json({ success: true, users });
   } catch (err) {
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ success: false, message: "Server error" });
   }
 });
 
@@ -23,22 +23,22 @@ router.get("/users", adminAuth, async (req, res) => {
 router.get("/users/:id", adminAuth, async (req, res) => {
   try {
     const user = await User.findById(req.params.id).select("-password");
-    if (!user) return res.status(404).json({ message: "User not found" });
-    res.json(user);
+    if (!user) return res.status(404).json({ success: false, message: "User not found" });
+    res.json({ success: true, user });
   } catch (err) {
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ success: false, message: "Server error" });
   }
 });
 
-// Update user info (balance, VIP status, etc.)
+// Update user info
 router.put("/users/:id", adminAuth, async (req, res) => {
   try {
     const updates = req.body;
-    const user = await User.findByIdAndUpdate(req.params.id, updates, { new: true });
-    if (!user) return res.status(404).json({ message: "User not found" });
-    res.json(user);
+    const user = await User.findByIdAndUpdate(req.params.id, updates, { new: true }).select("-password");
+    if (!user) return res.status(404).json({ success: false, message: "User not found" });
+    res.json({ success: true, user });
   } catch (err) {
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ success: false, message: "Server error" });
   }
 });
 
@@ -46,10 +46,10 @@ router.put("/users/:id", adminAuth, async (req, res) => {
 router.delete("/users/:id", adminAuth, async (req, res) => {
   try {
     const user = await User.findByIdAndDelete(req.params.id);
-    if (!user) return res.status(404).json({ message: "User not found" });
-    res.json({ message: "User deleted" });
+    if (!user) return res.status(404).json({ success: false, message: "User not found" });
+    res.json({ success: true, message: "User deleted" });
   } catch (err) {
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ success: false, message: "Server error" });
   }
 });
 
