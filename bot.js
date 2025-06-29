@@ -14,7 +14,7 @@ bot.setWebHook(`${BASE_URL}/bot${token}`);
 
 // Default image and Mini App link
 const IMAGE_URL = "https://tpe-plutoxs-projects-1800c7ee.vercel.app/image.jpg";
-const MINI_APP_URL = "https://t.me/Djangotestxr_bot/SpinTPE";
+const MINI_APP_URL = "https://t.me/Nakabozobot/SpinTPE";
 
 // ✅ Handle /start (with or without referral code)
 bot.onText(/\/start(?: (.+))?/, (msg, match) => {
