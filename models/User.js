@@ -52,10 +52,17 @@ const userSchema = new mongoose.Schema({
     },
   ],
 
-  // ✅ New field to control welcome screen
+  // ✅ New user welcome tracking
   isNewUser: {
     type: Boolean,
     default: true,
+  },
+
+  // ✅ Task claiming tracking (taskId: true/false)
+  claimedTasks: {
+    type: Map,
+    of: Boolean,
+    default: {},
   },
 
 }, { timestamps: true });
