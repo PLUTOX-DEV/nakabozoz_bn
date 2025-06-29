@@ -1,38 +1,52 @@
 const TelegramBot = require("node-telegram-bot-api");
-const token = process.env.TELEGRAM_BOT_TOKEN;
 
-// ✅ Webhook mode (Render-friendly)
+// Directly assign the token (or use process.env if preferred)
+const token = process.env.TELEGRAM_BOT_TOKEN || "YOUR_BOT_TOKEN"; // Replace for dev/testing
+
+// Webhook mode (Render-friendly)
 const bot = new TelegramBot(token, { webHook: true });
 
-// ✅ Replace with your deployed backend URL
-const URL = "https://nakabozoz.onrender.com";
+// Your deployed backend URL
+const BASE_URL = "https://nakabozoz.onrender.com";
 
-// ✅ Setup webhook endpoint
-bot.setWebHook(`${URL}/bot${token}`);
+// Set webhook for Telegram to forward updates
+bot.setWebHook(`${BASE_URL}/bot${token}`);
 
-// ✅ Handle /start with optional referral param
+// Default image and Mini App link
+const IMAGE_URL = "https://tpe-plutoxs-projects-1800c7ee.vercel.app/image.jpg";
+const MINI_APP_URL = "https://t.me/Djangotestxr_bot/SpinTPE";
+
+// ✅ Handle /start (with or without referral code)
 bot.onText(/\/start(?: (.+))?/, (msg, match) => {
   const chatId = msg.chat.id;
-  const referrer = match[1] || ""; // Optional referral code
+  const referrer = match[1] || null;
 
-  const miniAppUrl = `https://t.me/Djangotestxr_bot/SpinTPE?start=${referrer}`;
+  // Compose welcome message
+  const welcomeMessage = referrer
+    ? `👋 Welcome to *Nakabozoz*!\n\n🎉 You were referred by *${referrer}*.\nGet ready to spin, tap, and earn!`
+    : `👋 Welcome to *Nakabozoz* – the ultimate tap & spin Web3 mini game!\n\n🎁 Start earning rewards and invite friends to boost your gains.`;
 
-  const welcomeText = referrer
-    ? `👋 Welcome! You were referred by ${referrer}.`
-    : `👋 Welcome to Spin & Earn!`;
+  // Build full mini app URL with referral
+  const launchUrl = referrer
+    ? `${MINI_APP_URL}?start=${referrer}`
+    : MINI_APP_URL;
 
-  bot.sendPhoto(chatId, "https://tpe-plutoxs-projects-1800c7ee.vercel.app/image.jpg", {
-    caption: welcomeText,
+  // Send a welcome image with button
+  bot.sendPhoto(chatId, IMAGE_URL, {
+    caption: welcomeMessage,
+    parse_mode: "Markdown",
     reply_markup: {
       inline_keyboard: [[
         {
-          text: "🚀 Launch Mini App",
-          url: miniAppUrl,
+          text: "🚀 Launch Nakabozoz Mini App",
+          url: launchUrl,
         }
       ]]
     }
   });
 });
 
-// ✅ Export for use in server.js
+// You can handle other commands here later like /help, /leaderboard, etc.
+
+// Export the bot for use in your server.js
 module.exports = bot;
