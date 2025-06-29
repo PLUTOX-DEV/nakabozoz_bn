@@ -2,19 +2,21 @@ const express = require("express");
 const router = express.Router();
 const User = require("../models/User");
 
-// ✅ Enhanced Admin Auth Middleware with Debug Logs
+// ✅ Hardcoded admin key (same as used in frontend)
+const ADMIN_KEY = "my_super_secret_key"; // 🔒 Replace with your actual key
+
+// ✅ Admin Middleware with Debug Logging
 const adminAuth = (req, res, next) => {
   const adminKey = req.headers["x-admin-key"];
-  const serverKey = process.env.ADMIN_KEY;
 
-  if (adminKey === serverKey) {
+  if (adminKey === ADMIN_KEY) {
     console.log("✅ Admin key matched.");
     return next();
   }
 
   console.warn("❌ Admin key mismatch", {
     received: adminKey,
-    expected: serverKey ? "exists" : "missing in server",
+    expected: ADMIN_KEY,
   });
 
   return res.status(403).json({
