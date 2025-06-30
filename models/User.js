@@ -19,6 +19,7 @@ const userSchema = new mongoose.Schema({
     default: false,
   },
   vipExpiresAt: Date,
+
   multiplier: {
     type: Number,
     default: 1,
@@ -58,12 +59,20 @@ const userSchema = new mongoose.Schema({
     default: true,
   },
 
-  // ✅ Task claiming tracking (taskId: true/false)
+  // ✅ Task claiming tracking
   claimedTasks: {
     type: Map,
     of: Boolean,
     default: {},
   },
+
+  // ✅ Package system for Spin
+  packageType: {
+    type: String,
+    enum: ["free", "bronze", "silver", "gold"],
+    default: "free",
+  },
+  packageExpiresAt: Date,
 
 }, { timestamps: true });
 
