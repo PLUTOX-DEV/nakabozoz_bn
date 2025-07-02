@@ -1,7 +1,6 @@
-// controllers/userController.js
-// controllers/userController.js
 const User = require("../models/User");
 
+// ✅ Telegram login and referral
 exports.loginUser = async (req, res) => {
   try {
     const { telegramId, username, fullName, photo_url, referrer } = req.body;
@@ -13,7 +12,6 @@ exports.loginUser = async (req, res) => {
     let user = await User.findOne({ telegramId });
 
     if (!user) {
-      // New user sign-up
       user = new User({
         telegramId,
         username,
@@ -23,48 +21,32 @@ exports.loginUser = async (req, res) => {
         isNewUser: true,
       });
 
-      // Save new user
       await user.save();
 
-      // If referred, update the referrer user
       if (referrer && referrer !== telegramId) {
         const referrerUser = await User.findOne({ telegramId: referrer });
         if (referrerUser) {
-          // Increment referral count and add to referrals list
-          referrerUser.referralCount = (referrerUser.referralCount || 0) + 1;
-          referrerUser.referrals = referrerUser.referrals || [];
-
-          // Add the new user to referrals array if not already there
-          if (!referrerUser.referrals.some(r => r.username === username)) {
-            referrerUser.referrals.push({ username, joinedAt: new Date() });
-          }
-
+          referrerUser.referralCount += 1;
+          referrerUser.referrals.push({ username, joinedAt: new Date() });
           await referrerUser.save();
         }
       }
     } else {
-      // Existing user - update info
       user.username = username || user.username;
       user.fullName = fullName || user.fullName;
       user.photo_url = photo_url || user.photo_url;
 
-      // If user had no referrer but now has one, set it
       if (!user.referredBy && referrer && referrer !== telegramId) {
         user.referredBy = referrer;
 
-        // Update the referrer info as well
         const referrerUser = await User.findOne({ telegramId: referrer });
         if (referrerUser) {
-          referrerUser.referralCount = (referrerUser.referralCount || 0) + 1;
-          referrerUser.referrals = referrerUser.referrals || [];
-          if (!referrerUser.referrals.some(r => r.username === username)) {
-            referrerUser.referrals.push({ username, joinedAt: new Date() });
-          }
+          referrerUser.referralCount += 1;
+          referrerUser.referrals.push({ username, joinedAt: new Date() });
           await referrerUser.save();
         }
       }
 
-      // Mark not new user anymore
       if (user.isNewUser) user.isNewUser = false;
 
       await user.save();
@@ -77,8 +59,52 @@ exports.loginUser = async (req, res) => {
   }
 };
 
+// ✅ Manual referral claim via username
+exports.claimReferralReward = async (req, res) => {
+  const { telegramId, referrerUsername } = req.body;
 
-// Get or create user by wallet address
+  if (!telegramId || !referrerUsername) {
+    return res.status(400).json({ message: "Missing telegramId or referrerUsername" });
+  }
+
+  try {
+    const user = await User.findOne({ telegramId });
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    if (user.referredBy) {
+      return res.status(400).json({ message: "Referral already claimed" });
+    }
+
+    const referrer = await User.findOne({ username: referrerUsername });
+    if (!referrer) return res.status(404).json({ message: "Referrer not found" });
+
+    // ✅ Apply rewards
+    user.referredBy = referrer.telegramId;
+    user.balance += 500_000;
+    await user.save();
+
+    referrer.referralCount += 1;
+    referrer.referralEarnings += 1_000_000;
+    referrer.balance += 1_000_000;
+
+    if (!referrer.referrals.some(r => r.username === user.username)) {
+      referrer.referrals.push({ username: user.username, joinedAt: new Date() });
+    }
+
+    await referrer.save();
+
+    return res.json({
+      message: "Referral claimed successfully",
+      userReward: 500_000,
+      referrerReward: 1_000_000,
+    });
+  } catch (err) {
+    console.error("Referral error:", err);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+
+// ✅ Wallet login
 exports.getOrCreateUser = async (req, res) => {
   const { walletAddress } = req.body;
   if (!walletAddress) return res.status(400).json({ error: "walletAddress required" });
@@ -95,7 +121,7 @@ exports.getOrCreateUser = async (req, res) => {
   }
 };
 
-// Spin and reward user
+// ✅ Spin and reward
 exports.spinAndReward = async (req, res) => {
   const { walletAddress, reward } = req.body;
 
@@ -116,7 +142,7 @@ exports.spinAndReward = async (req, res) => {
   }
 };
 
-// Activate VIP
+// ✅ Activate VIP
 exports.activateVIP = async (req, res) => {
   const { walletAddress } = req.body;
   if (!walletAddress) return res.status(400).json({ error: "walletAddress required" });
@@ -126,7 +152,7 @@ exports.activateVIP = async (req, res) => {
     if (!user) return res.status(404).json({ error: "User not found" });
 
     user.isVIP = true;
-    user.vipExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours from now
+    user.vipExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
     await user.save();
 
     res.json({ message: "VIP activated", expiresAt: user.vipExpiresAt });

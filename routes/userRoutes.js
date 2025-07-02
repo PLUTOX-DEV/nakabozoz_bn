@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const User = require("../models/User");
+const userController = require("../controllers/userController"); // ✅ Include full controller
 const dayjs = require("dayjs");
 
 // 📌 Get all users
@@ -14,42 +15,10 @@ router.get("/", async (req, res) => {
 });
 
 // 📌 Login or create user
-router.post("/login", async (req, res) => {
-  const { telegramId, username, fullName, referrer, photo_url } = req.body;
+router.post("/login", userController.loginUser);
 
-  try {
-    let user = await User.findOne({ telegramId });
-
-    if (!user) {
-      // Create new user
-      user = await User.create({
-        telegramId,
-        username: username || "",
-        fullName: fullName || "",
-        balance: 10,
-        referredBy: referrer || null,
-        photo_url: photo_url || "",
-      });
-
-      // ✅ Referral via telegramId
-      if (referrer && referrer !== telegramId) {
-        const referrerUser = await User.findOne({ telegramId: referrer });
-
-        if (referrerUser) {
-          referrerUser.referralCount += 1;
-          referrerUser.referralEarnings += 20;
-          referrerUser.balance += 20;
-          referrerUser.referrals.push({ telegramId, joinedAt: new Date() });
-          await referrerUser.save();
-        }
-      }
-    }
-
-    res.json(user);
-  } catch (err) {
-    res.status(500).json({ message: "Server error", error: err.message });
-  }
-});
+// ✅ Manual referral claim via username
+router.post("/claim-referral", userController.claimReferralReward);
 
 // 📌 Referral leaderboard
 router.get("/referral-leaderboard", async (req, res) => {
@@ -58,7 +27,6 @@ router.get("/referral-leaderboard", async (req, res) => {
       .sort({ referralCount: -1 })
       .limit(20)
       .select("telegramId username fullName photo_url referralCount");
-
     res.json(topReferrers);
   } catch (err) {
     res.status(500).json({ error: "Failed to load leaderboard" });
