@@ -16,24 +16,20 @@ router.get("/", async (req, res) => {
 // 📌 Create or fetch user with referral + welcome bonus logic
 router.post("/login", async (req, res) => {
   try {
-    // Expecting 'referrer' field in request body as who referred the new user
     const { telegramId, username, fullName, referrer, photo_url } = req.body;
 
-    // Check if user already exists
     let user = await User.findOne({ telegramId });
 
     if (!user) {
-      // Create new user with welcome bonus and save referredBy field
       user = await User.create({
         telegramId,
         username,
         fullName,
-        balance: 10,  // welcome bonus coins
-        referredBy: referrer || null,  // save who referred this user
+        balance: 10, // Welcome bonus
+        referredBy: referrer || null,
         photo_url: photo_url || "",
       });
 
-      // Reward the referrer (if exists and is not the same user)
       if (referrer && referrer !== username) {
         const referrerUser = await User.findOne({ username: referrer });
 
@@ -65,7 +61,6 @@ router.post("/login", async (req, res) => {
 // 📌 Get top referrers for leaderboard
 router.get("/referral-leaderboard", async (req, res) => {
   try {
-    // Find users with referralCount > 0 and sort descending, limit 20
     const topReferrers = await User.find({ referralCount: { $gt: 0 } })
       .sort({ referralCount: -1 })
       .limit(20)
@@ -82,7 +77,8 @@ router.get("/referral-leaderboard", async (req, res) => {
   }
 });
 
-router.post('/buy-tap-bot', async (req, res) => {
+// 📌 Buy Tap Bot
+router.post("/buy-tap-bot", async (req, res) => {
   const { telegramId } = req.body;
 
   try {
@@ -115,16 +111,24 @@ router.get("/:telegramId", async (req, res) => {
   }
 });
 
-// 📌 Update user info (coins, VIP, etc.)
+// 📌 Update user info (coins, VIP, multiplier, regen, etc.)
 router.post("/update", async (req, res) => {
   try {
     const { telegramId, ...updates } = req.body;
 
-    const user = await User.findOneAndUpdate(
-      { telegramId },
-      updates,
-      { new: true }
-    );
+    // Enforce multiplier limit
+    if (updates.multiplier !== undefined) {
+      updates.multiplier = Math.min(20, updates.multiplier);
+    }
+
+    // Enforce minimum staminaRegenSpeed of 2000 ms
+    if (updates.staminaRegenSpeed !== undefined) {
+      updates.staminaRegenSpeed = Math.max(2000, updates.staminaRegenSpeed);
+    }
+
+    const user = await User.findOneAndUpdate({ telegramId }, updates, {
+      new: true,
+    });
 
     if (!user) return res.status(404).json({ message: "User not found" });
 
