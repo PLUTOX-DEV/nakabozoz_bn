@@ -21,22 +21,25 @@ router.post("/login", async (req, res) => {
     let user = await User.findOne({ telegramId });
 
     if (!user) {
+      // Create new user
       user = await User.create({
         telegramId,
-        username,
-        fullName,
+        username: username || "",
+        fullName: fullName || "",
         balance: 10,
         referredBy: referrer || null,
         photo_url: photo_url || "",
       });
 
-      if (referrer && referrer !== username) {
-        const referrerUser = await User.findOne({ username: referrer });
+      // ✅ Referral via telegramId
+      if (referrer && referrer !== telegramId) {
+        const referrerUser = await User.findOne({ telegramId: referrer });
+
         if (referrerUser) {
           referrerUser.referralCount += 1;
           referrerUser.referralEarnings += 20;
           referrerUser.balance += 20;
-          referrerUser.referrals.push({ username, joinedAt: new Date() });
+          referrerUser.referrals.push({ telegramId, joinedAt: new Date() });
           await referrerUser.save();
         }
       }
@@ -44,7 +47,7 @@ router.post("/login", async (req, res) => {
 
     res.json(user);
   } catch (err) {
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: "Server error", error: err.message });
   }
 });
 
@@ -54,7 +57,7 @@ router.get("/referral-leaderboard", async (req, res) => {
     const topReferrers = await User.find({ referralCount: { $gt: 0 } })
       .sort({ referralCount: -1 })
       .limit(20)
-      .select("username fullName photo_url referralCount");
+      .select("telegramId username fullName photo_url referralCount");
 
     res.json(topReferrers);
   } catch (err) {
